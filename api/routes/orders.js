@@ -9,8 +9,13 @@ router.get('/', (req,res,next)=>{
 })
 
 router.post('/', (req,res,next)=>{
+    const order = {
+        productID: req.body.orderID,
+        quantity: req.body.quantity
+    }
     res.status(201).json({
-        message: "handling post req of /orders"
+        message: "handling post req of /orders",
+        order: order
     })
 })
 
@@ -26,4 +31,4 @@ router.delete('/:orderID', (req,res,next)=>{
     })
 })
 
-module.exports = router
+module.exports = router 
