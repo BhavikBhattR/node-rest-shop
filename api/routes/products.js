@@ -5,11 +5,54 @@ const router = express.Router()
 const Product = require('../models/product');
 
 const mongoose = require('mongoose');
-const e = require('express');
+
+
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: "dibsjiozz",
+    api_key: "734327239785754",
+    api_secret: "VY0o3syKgdRWfrrasTjtXPVs49I"
+  });
+
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+      folder: 'productImages'
+    }
+  });
+ 
+const multer = require('multer');
+// const storage = multer.diskStorage({
+//     destination: function(req,file,cb){
+//         cb(null, './uploads');
+//     },
+//     filename: function(req,file,cb){
+//         cb(null, new Date().toISOString() + '-' + file.originalname)
+//     }
+// })
+
+const fileFilter = (req,file,cb) =>{
+    // reject a file
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+        cb(null, true)
+    }else{
+    cb(() => new Error('please add correct file'), false)
+    }
+}
+
+const upload = multer({
+    storage: storage, 
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+})
+
 
 router.get('/', (req,res,next)=>{
    Product.find()
-   .select('name price _id')
+   .select('name price _id productImage')
    .exec()
    .then(docs =>{
         const response = {
@@ -19,6 +62,7 @@ router.get('/', (req,res,next)=>{
                     name: doc.name,
                     price: doc.price,
                     _id: doc._id,
+                    productImage: doc.productImage,
                     request: {
                         type: 'GET',
                         url: `http://localhost:3000/products/${doc._id}`
@@ -42,11 +86,13 @@ router.get('/', (req,res,next)=>{
    });
 })
 
-router.post('/', (req,res,next)=>{
+router.post('/', upload.single('productImage'), (req,res,next)=>{
+    console.log(req.file);
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        price: req.body.price
+        price: req.body.price,
+        productImage: req.file.path
     });
     product.save().then(result =>{
         console.log(result);
@@ -56,6 +102,7 @@ router.post('/', (req,res,next)=>{
                 name: result.name,
                 price: result.price,
                 _id: result._id,
+                productImage: result.productImage,
                 request: {
                     type: 'GET',
                     url: `http://localhost:3000/products/${result._id}`
@@ -74,7 +121,7 @@ router.post('/', (req,res,next)=>{
 router.get('/:productID', (req,res,next)=>{
     const id = req.params.productID;
     Product.findById(id)
-    .select('name price _id')
+    .select('name price _id productImage')
     .exec()
     .then(doc => {
         console.log('from db',doc)
