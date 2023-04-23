@@ -3,10 +3,12 @@ const mongoose = require('mongoose');
 const Order = require('../models/order');
 const Product = require('../models/product');
 const router = express.Router();
+const checkAuth = require('../middleware/check-auth')
 
-router.get('/', (req,res,next)=>{
+router.get('/', checkAuth, (req,res,next)=>{
    Order.find()
     .select('product quantity _id')
+    .populate('product')
     .exec()
     .then(docs => {
         res.status(200).json({
@@ -31,7 +33,7 @@ router.get('/', (req,res,next)=>{
     })
 })
 
-router.post('/', (req,res,next)=>{
+router.post('/', checkAuth, (req,res,next)=>{
     Product.findById(req.body.productID)
     .exec()
     .then(product => {
@@ -71,11 +73,13 @@ router.post('/', (req,res,next)=>{
       })
 })
 
-router.get('/:orderID', (req,res,next)=>{
-    Product.findById(req.params.orderID).exec()
+router.get('/:orderID', checkAuth, (req,res,next)=>{
+    Order.findById(req.params.orderID)
+    .populate('product')
+    .exec()
     .then(order=> {
         if(!order){
-            res.status(404).json({
+            return res.status(404).json({
                 message: "order not found"
             })
         }
@@ -94,7 +98,7 @@ router.get('/:orderID', (req,res,next)=>{
     });
 })
 
-router.delete('/:orderID', (req,res,next)=>{
+router.delete('/:orderID', checkAuth, (req,res,next)=>{
     Order.findOneAndRemove({_id: req.params.orderID})
     .exec()
     .then(result => {
